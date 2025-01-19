@@ -18,7 +18,7 @@ Because UDP doesn't guarantee reliability, it serves the purpose of emulating th
 5. The client is configured to request a valid file from the `source_files` dir. The client can be modified to simulate packet loss, or to request a file that doesn't exist in `source_files`. The server will continue trying to transmit a valid file until it receives 5 duplicate ACKs from the client.
 
 ## Acknowledgements
-Professor Fahad Dogar, the Networks professor at Tufts.
+Professor Fahad Dogar, the Networks professor at Tufts.  
 Ismail Badrezzamane, for his help writing an excellent test suite for this program.
 
  
