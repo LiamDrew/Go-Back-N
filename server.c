@@ -1,3 +1,13 @@
+/**
+ * @file server.c
+ * @author Liam Drew
+ * @date November 2024
+ * @brief
+ * Implementation of a file transfer server. Listens for file requests from
+ * clients and transfers requested files in 512 byte data packets. Implements
+ * the Go-Back-N (Sliding Window) reliability protocol over UDP.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <netdb.h>
@@ -9,6 +19,7 @@
 #include "transfer.h"
 
 #define BUFSIZE 1024
+#define SRCDIR "source_files/"
 
 typedef struct {
     u_int8_t type;
@@ -19,6 +30,12 @@ typedef struct {
     u_int8_t window_size;
     char filename[20];
 } rrq;
+
+static void error(char *msg)
+{
+    perror(msg);
+    exit(1);
+}
 
 int main(int argc, char **argv) {
     int sockfd;
@@ -86,7 +103,6 @@ int main(int argc, char **argv) {
 
         assert(n <= sizeof(rrq)); // Ensure clients don't exceed write limit
 
-        // NOTE: May have to put data in host order
         msg_type head;
         memset(&head, 0, sizeof(msg_type));
         memcpy(&head, buf, sizeof(msg_type));
@@ -100,8 +116,11 @@ int main(int argc, char **argv) {
             memset(&req, 0, sizeof(rrq));
             memcpy(&req, buf, n);
 
+            char filepath[35] = SRCDIR;
+            strncat(filepath, req.filename, 20);
+
             /* try to open filename provided by client */
-            fd = open(req.filename, O_RDONLY);
+            fd = open(filepath, O_RDONLY);
             if (fd == -1) {     // File doesn't exist, send error msg
                 printf("File cannot be opened, sending error message\n\n");
                 if (!send_error(sockfd, &clientaddr, clientlen))

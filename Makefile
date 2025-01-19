@@ -2,9 +2,9 @@ src = $(wildcard *.c)
 obj = $(src:.c=.o)
 CC = gcc
 CFLAGS = -Wall 
-LDFLAGS = -lnsl
+LDFLAGS =
 
-a.out: $(obj)
+server: $(obj)
 	$(CC) $(CFLAFS) -o $@ $^ $(LDFLAGS)
 
 .PHONY: clean

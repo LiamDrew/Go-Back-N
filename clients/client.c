@@ -1,7 +1,11 @@
-/* 
- * udpclient.c - A simple UDP client
+/**
+ * @file client.c
+ * @author Liam Drew
+ * @brief
+ * A simple UDP client
  * usage: udpclient <host> <port>
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -74,16 +78,18 @@ int main(int argc, char **argv) {
     int serverlen;
     struct sockaddr_in serveraddr;
     struct hostent *server;
-    char *hostname = "10.4.2.20";
     char buf[BUFSIZE];
+    char *hostname;
 
     /* check command line arguments */
-    if (argc != 2) {
-       fprintf(stderr,"usage: %s <port>\n", argv[0]);
-       exit(0);
+    if (argc != 3)
+    {
+        fprintf(stderr, "usage: %s <host> <port>\n", argv[0]);
+        exit(0);
     }
-    // hostname = argv[1];
-    portno = atoi(argv[1]);
+
+    hostname = argv[1];
+    portno = atoi(argv[2]);
 
     /* socket: create the socket */
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -106,7 +112,6 @@ int main(int argc, char **argv) {
 
 
     /* send the rrq to the server */
-
     rrq r;
     r.type = 1;
     r.window_size = 1;
@@ -125,7 +130,6 @@ int main(int argc, char **argv) {
     bzero(buf, BUFSIZE);
     
     /* receive reply from server*/
-
     bool done_recieving = false;
     ack a;
     char ack_buf[sizeof(ack)];
@@ -142,7 +146,7 @@ int main(int argc, char **argv) {
 
         // Step 1: Recieve a packet
         n = recvfrom(sockfd, buf, 514, 0, 
-            (struct sockaddr *) &serveraddr, &serverlen);
+            (struct sockaddr *) &serveraddr, (socklen_t *) &serverlen);
         if (n < 0) 
             error("ERROR in recvfrom");
 
@@ -159,7 +163,6 @@ int main(int argc, char **argv) {
             done_recieving = true;
         }
 
-        
         // Step 2: Send an Ack
         ack curr_ack;
         curr_ack.type = 3;

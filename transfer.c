@@ -1,3 +1,12 @@
+/**
+ * @file transfer.c
+ * @author Liam Drew
+ * @date November 2024
+ * @brief
+ * Implementation of the transfer module. Manages the sliding window for the
+ * file transfer.
+*/
+
 #include "transfer.h"
 #include <string.h>
 #include <unistd.h>
@@ -43,23 +52,23 @@ typedef struct {
 } packet;
 
 
-void error(char *msg)
+static void error(char *msg)
 {
     perror(msg);
     exit(1);
 }
 
+// Debugging utilities
 void print_data(char buf[], int size)
 {
     data_header dh;
     memcpy(&dh, buf, DHSIZE);
 
-    // printf("\nPrinting the buffer\n");
-    // printf("Message type: %d\n", dh.type);
+    printf("\nPrinting the buffer\n");
+    printf("Message type: %d\n", dh.type);
     printf("SENDING packet with sequence number: %d\n", dh.seq_num);
-    // printf("Trying to send %d bytes\n", size);
+    printf("Trying to send %d bytes\n", size);
 
-    /*
     // Printing non-string contents
     for (int offset = 0; offset < size; offset++) {
         if (buf[offset] == '\0')
@@ -69,7 +78,6 @@ void print_data(char buf[], int size)
     }
 
     printf("\n");
-    */
 }
 
 void print_window(packet window[], int size)
@@ -77,18 +85,18 @@ void print_window(packet window[], int size)
     for (int i = 0; i < size; i++) {
         printf("Seq num is: %d\n", window[i].seq_num);
 
-        // // Printing the potentially non-string data
-        // for (int offset = 0; offset < window[i].size; offset++) {
-        //     if (window[i].data[offset] == '\0') {
-        //         putchar('.');
-        //     }
+        // Printing the potentially non-string data
+        for (int offset = 0; offset < window[i].size; offset++) {
+            if (window[i].data[offset] == '\0') {
+                putchar('.');
+            }
 
-        //     else {
-        //         putchar(window[i].data[offset]);
-        //     }
-        // }
+            else {
+                putchar(window[i].data[offset]);
+            }
+        }
 
-        // printf("\n");
+        printf("\n");
     }
 }
 
@@ -172,13 +180,9 @@ bool send_file(int sockfd, int filefd, const int set_window_size,
                     cum_sequence_num++;
                 }
             }
-        }
-
-        // printf("Window after preparation\n");
-        // print_window(window, window_size);        
+        }    
 
         // Step 2: Send the packets
-
         for (int i = 0; i < window_size; i++) {
             // If there's data to send and it hasn't been sent already, send it
             if (window[i].data != NULL && !window[i].sent) {
@@ -215,7 +219,7 @@ bool send_file(int sockfd, int filefd, const int set_window_size,
             timeouts++;
 
             if (timeouts >= 5) {
-                // printf("5 timeouts, stop trying to send to client\n");
+                // After 5 timeouts, give up on sending to the client
                 return false;
             }
             for (int i = 0; i < window_size; i++) {
@@ -232,9 +236,7 @@ bool send_file(int sockfd, int filefd, const int set_window_size,
                     (struct sockaddr *) clientaddr, &clientlen);
                 if (n < 0) { error("Failed to read ACK"); }
 
-                // see what sequence number was acknowledged
                 memcpy(&a, ack_buf, sizeof(ack));
-                // printf("\nRECEIVED an ack for packet %d\n", a.seq_num);
 
                 bool ack_found = false;
 
@@ -266,14 +268,10 @@ bool send_file(int sockfd, int filefd, const int set_window_size,
 
 
         // Step 4: Adjust window based on ACKs
-        // printf("Window size before adjustment\n");
-        // print_window(window, window_size);        
-        // printf("ACK was found at index %d within the window\n", ack_index);
         /* only bother adjust the window if more packets need to be sent */
         if (!finished_sending) {
 
             if (ack_index != -1) {
-                // printf("Sliding the sender window\n");
                 int shift_count = ack_index + 1;
 
                 for (int i = 0; i < window_size - shift_count; i++) {
@@ -289,16 +287,8 @@ bool send_file(int sockfd, int filefd, const int set_window_size,
             }
         }
         
-        // printf("Window size after adjustment\n");
-        // print_window(window, window_size);        
-
-
-
         // Step 5: Confirm that all ACKs have been received
-
         if (finished_sending) {
-            // printf("Finished sending all packets\n");
-            // printf("Seq num is %d, Ack num is %d", cum_sequence_num, cum_ack_num);
             if (cum_sequence_num == cum_ack_num) {
                 reception_confirmed = true;
             }
